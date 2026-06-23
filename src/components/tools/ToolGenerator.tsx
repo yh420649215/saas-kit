@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Copy, Check, Heart, Feather, HeartHandshake, Briefcase, ClipboardCheck, FileText, Send } from "lucide-react";
@@ -21,26 +19,71 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 
 export function ToolGenerator({ tool }: { tool: ToolScenario }) {
   const [input, setInput] = useState("");
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
 
-  const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
-  });
-
-  const isLoading = status === "submitted" || status === "streaming";
-
-  const lastMessage = messages.filter((m) => m.role === "assistant").pop();
-  const result = lastMessage?.parts
-    ?.filter((p: any) => p.type === "text")
-    .map((p: any) => p.text)
-    .join("") ?? "";
-
-  const handleGenerate = (e: React.FormEvent) => {
+  const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
-    sendMessage({
-      text: `${tool.systemPrompt}\n\nUser details:\n${input}`,
-    });
+    if (!input.trim() || loading) return;
+
+    setLoading(true);
+    setError("");
+    setResult("");
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: tool.systemPrompt },
+            { role: "user", content: input },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        setError("Something went wrong. Please try again.");
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        setError("No response from server.");
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let text = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === "text-delta" && data.textDelta) {
+                text += data.textDelta;
+                setResult(text);
+              }
+            } catch {
+              // skip unparseable lines
+            }
+          }
+        }
+      }
+    } catch {
+      setError("Network error. Check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCopy = async () => {
@@ -54,9 +97,9 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
 
   return (
     <div className="space-y-6">
-      {/* Input Card */}
+      {/* Input */}
       <div className={`rounded-xl border ${tool.theme.border} bg-card shadow-sm`}>
-        <div className={`flex items-center gap-3 px-6 pt-6 pb-2`}>
+        <div className="flex items-center gap-3 px-6 pt-6 pb-2">
           <div className={`flex items-center justify-center w-10 h-10 rounded-xl ${tool.theme.accentLight} border ${tool.theme.border}`}>
             <Icon className={`h-5 w-5 ${tool.theme.text}`} />
           </div>
@@ -69,16 +112,19 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
               onChange={(e) => setInput(e.target.value)}
               placeholder={tool.inputPlaceholder}
               rows={6}
-              disabled={isLoading}
+              disabled={loading}
               className="resize-y min-h-[120px]"
             />
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
             <Button
               type="submit"
-              disabled={isLoading || !input.trim()}
+              disabled={loading || !input.trim()}
               className={cn("w-full", tool.theme.accent)}
               size="lg"
             >
-              {isLoading ? (
+              {loading ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Writing...</>
               ) : (
                 <>Generate {tool.title.replace(" Writer", "").replace(" Generator", "")}</>
@@ -88,9 +134,17 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
         </div>
       </div>
 
-      {/* Result Card */}
+      {/* Loading */}
+      {loading && !result && (
+        <div className={`rounded-xl border ${tool.theme.border} bg-card shadow-sm p-12 text-center`}>
+          <Loader2 className={`h-8 w-8 mx-auto mb-4 animate-spin ${tool.theme.text}`} />
+          <p className="text-muted-foreground text-sm">Crafting your words...</p>
+        </div>
+      )}
+
+      {/* Result */}
       {result && (
-        <div className={`rounded-xl border ${tool.theme.border} bg-card shadow-sm animate-in fade-in slide-in-from-top-4 duration-300`}>
+        <div className={`rounded-xl border ${tool.theme.border} bg-card shadow-sm`}>
           <div className="flex items-center justify-between px-6 pt-6 pb-2">
             <div className="flex items-center gap-3">
               <div className={`flex items-center justify-center w-10 h-10 rounded-xl ${tool.theme.accentLight} border ${tool.theme.border}`}>
@@ -106,14 +160,6 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
           <div className="p-6 pt-2">
             <div className="whitespace-pre-wrap text-sm leading-relaxed">{result}</div>
           </div>
-        </div>
-      )}
-
-      {/* Loading State */}
-      {isLoading && !result && (
-        <div className={`rounded-xl border ${tool.theme.border} bg-card shadow-sm p-12 text-center`}>
-          <Loader2 className={`h-8 w-8 mx-auto mb-4 animate-spin ${tool.theme.text}`} />
-          <p className="text-muted-foreground text-sm">Crafting your words...</p>
         </div>
       )}
     </div>
