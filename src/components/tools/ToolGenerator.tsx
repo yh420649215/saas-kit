@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Copy, Check, ChevronLeft, ChevronRight, Eye, Heart, Feather, HeartHandshake, Briefcase, ClipboardCheck, FileText, Send } from "lucide-react";
 import type { ToolScenario } from "@/config/tools";
 import { cn } from "@/lib/utils";
+import { remainingFree, incrementUsage, isUnlocked } from "@/lib/usage-limits";
+import { PaywallModal } from "@/components/tools/PaywallModal";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Heart, Feather, HeartHandshake, Briefcase, ClipboardCheck, FileText, Send,
@@ -22,6 +24,8 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
   const [copied, setCopied] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [showExample, setShowExample] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [freeLeft, setFreeLeft] = useState(2);
   const abortRef = useRef<AbortController | null>(null);
 
   const Icon = iconMap[tool.theme.icon] || FileText;
@@ -110,6 +114,11 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
   };
 
   const handleGenerateAll = async () => {
+    if (!isUnlocked() && remainingFree() <= 0) {
+      setShowPaywall(true);
+      return;
+    }
+
     setLoading(true);
     setError("");
     setResults([]);
@@ -117,6 +126,8 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
       await handleGenerate(i, true);
     }
     setLoading(false);
+    incrementUsage();
+    setFreeLeft(remainingFree());
   };
 
   const handleCopy = async (text: string, idx: number) => {
@@ -127,6 +138,17 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
 
   return (
     <div className="space-y-6">
+      {/* Free uses indicator */}
+      {!isUnlocked() && (
+        <div className="text-center">
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+            <span className="font-medium text-foreground">{remainingFree()}</span> free {remainingFree() === 1 ? "use" : "uses"} left
+            <span className="text-muted-foreground">·</span>
+            <button onClick={() => setShowPaywall(true)} className="text-primary hover:underline">Unlock $19</button>
+          </span>
+        </div>
+      )}
+
       {/* Step Indicator */}
       <div className="flex items-center justify-center gap-2 mb-2">
         {tool.steps.map((_, i) => (
@@ -241,6 +263,8 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
           </div>
         </div>
       )}
+
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} />
     </div>
   );
 }

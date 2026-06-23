@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { toolScenarios } from "@/config/tools";
 import { ToolGenerator } from "@/components/tools/ToolGenerator";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,6 +8,21 @@ import { Heart, Feather, HeartHandshake, Briefcase, ClipboardCheck, FileText, Se
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Heart, Feather, HeartHandshake, Briefcase, ClipboardCheck, FileText, Send,
 };
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const tool = toolScenarios.find((t) => t.slug === slug);
+  if (!tool) return {};
+  return {
+    title: `${tool.title} — Free AI-Powered Writing Tool`,
+    description: tool.description,
+    keywords: [tool.title, "AI writing tool", "free AI generator", tool.slug.replace("-", " ")],
+    openGraph: {
+      title: tool.title,
+      description: tool.description,
+    },
+  };
+}
 
 export function generateStaticParams() {
   return toolScenarios.map((tool) => ({ slug: tool.slug }));
