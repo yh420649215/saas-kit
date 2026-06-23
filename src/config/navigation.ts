@@ -1,7 +1,7 @@
 export const mainNavLinks = [
   { href: "/#features", label: "Features" },
+  { href: "/tools/wedding-speech", label: "AI Tools" },
   { href: "/#pricing", label: "Pricing" },
-  { href: "/#faq", label: "FAQ" },
   { href: "/blog", label: "Blog" },
 ];
 
