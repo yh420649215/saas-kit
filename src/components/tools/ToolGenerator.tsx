@@ -5,9 +5,19 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Copy, Check } from "lucide-react";
+import { Loader2, Copy, Check, Heart, Feather, HeartHandshake, Briefcase, ClipboardCheck, FileText, Send } from "lucide-react";
 import type { ToolScenario } from "@/config/tools";
+import { cn } from "@/lib/utils";
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Heart,
+  Feather,
+  HeartHandshake,
+  Briefcase,
+  ClipboardCheck,
+  FileText,
+  Send,
+};
 
 export function ToolGenerator({ tool }: { tool: ToolScenario }) {
   const [input, setInput] = useState("");
@@ -19,7 +29,6 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
 
   const isLoading = status === "submitted" || status === "streaming";
 
-  // Extract the latest assistant message content
   const lastMessage = messages.filter((m) => m.role === "assistant").pop();
   const result = lastMessage?.parts
     ?.filter((p: any) => p.type === "text")
@@ -29,9 +38,8 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-
     sendMessage({
-      text: `System: ${tool.systemPrompt}\n\nUser input: ${input}`,
+      text: `${tool.systemPrompt}\n\nUser details:\n${input}`,
     });
   };
 
@@ -42,45 +50,67 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const Icon = iconMap[tool.theme.icon] || FileText;
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{tool.inputLabel}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Input Card */}
+      <div className={`rounded-xl border ${tool.theme.border} bg-card shadow-sm`}>
+        <div className={`flex items-center gap-3 px-6 pt-6 pb-2 ${tool.theme.text}`}>
+          <Icon className="h-5 w-5" />
+          <h2 className="font-semibold">{tool.inputLabel}</h2>
+        </div>
+        <div className="p-6 pt-2">
           <form onSubmit={handleGenerate} className="space-y-4">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={tool.inputPlaceholder}
-              rows={5}
+              rows={6}
               disabled={isLoading}
+              className="resize-y min-h-[120px]"
             />
-            <Button type="submit" disabled={isLoading || !input.trim()} className="w-full">
+            <Button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className={cn("w-full", tool.theme.accent)}
+              size="lg"
+            >
               {isLoading ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Writing...</>
               ) : (
-                "Generate"
+                <>Generate {tool.title.replace(" Writer", "").replace(" Generator", "")}</>
               )}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
+      {/* Result Card */}
       {result && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">{tool.outputLabel}</CardTitle>
-            <Button variant="ghost" size="sm" onClick={handleCopy}>
+        <div className={`rounded-xl border ${tool.theme.border} bg-card shadow-sm animate-in fade-in slide-in-from-top-4 duration-300`}>
+          <div className="flex items-center justify-between px-6 pt-6 pb-2">
+            <div className={`flex items-center gap-2 ${tool.theme.text}`}>
+              <Icon className="h-4 w-4" />
+              <h2 className="font-semibold">{tool.outputLabel}</h2>
+            </div>
+            <Button variant="ghost" size="sm" onClick={handleCopy} className="text-muted-foreground hover:text-foreground">
               {copied ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
               {copied ? "Copied" : "Copy"}
             </Button>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6 pt-2">
             <div className="whitespace-pre-wrap text-sm leading-relaxed">{result}</div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isLoading && !result && (
+        <div className={`rounded-xl border ${tool.theme.border} bg-card shadow-sm p-12 text-center`}>
+          <Loader2 className={`h-8 w-8 mx-auto mb-4 animate-spin ${tool.theme.text}`} />
+          <p className="text-muted-foreground text-sm">Crafting your words...</p>
+        </div>
       )}
     </div>
   );
