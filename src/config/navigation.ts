@@ -22,19 +22,3 @@ export const footerLinks = {
     { href: "/terms", label: "Terms of Service" },
   ],
 };
-
-import {
-  LayoutDashboard,
-  Settings,
-  CreditCard,
-  Users,
-  BarChart3,
-} from "lucide-react";
-
-export const dashboardLinks = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/dashboard/team", label: "Team", icon: Users },
-  { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
-  { href: "/settings", label: "Settings", icon: Settings },
-];

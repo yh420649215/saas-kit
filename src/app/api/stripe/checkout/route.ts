@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe/client";
-import { requireAuth } from "@/lib/supabase/require-auth";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
-  const { user } = await requireAuth();
+  const supabase = await createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const { priceId, plan, successUrl, cancelUrl } = await request.json();
