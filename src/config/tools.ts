@@ -13,6 +13,8 @@ export interface ToolScenario {
   description: string;
   theme: ToolTheme;
   systemPrompt: string;
+  steps: { question: string; placeholder: string }[];
+  tones: string[];
   inputLabel: string;
   inputPlaceholder: string;
   outputLabel: string;
@@ -25,6 +27,12 @@ export const toolScenarios: ToolScenario[] = [
     slug: "wedding-speech",
     title: "Wedding Speech Writer",
     description: "Craft a heartfelt, personal speech for the people you love most.",
+    steps: [
+      { question: "What's your role?", placeholder: "Best man? Maid of honor? Father of the bride? Tell us who you are in this wedding." },
+      { question: "Tell us about the couple", placeholder: "How do you know them? What's a moment you'll never forget? What makes their love story special?" },
+      { question: "What tone feels right?", placeholder: "Heartfelt and tearful? Funny and light? A mix of both? Any inside jokes or stories to include?" },
+    ],
+    tones: ["Heartfelt & Warm", "Funny & Charming", "Classic & Elegant", "Short & Sweet"],
     theme: {
       gradient: "bg-gradient-to-b from-rose-50 via-white to-rose-50 dark:from-rose-950/20 dark:via-background dark:to-rose-950/20",
       accent: "bg-rose-500 hover:bg-rose-600",
@@ -44,6 +52,12 @@ export const toolScenarios: ToolScenario[] = [
     slug: "eulogy",
     title: "Eulogy Writer",
     description: "Honor a life with words that capture who they truly were.",
+    steps: [
+      { question: "Who was this person to you?", placeholder: "Their name, your relationship. How long did you know them? What role did they play in your life?" },
+      { question: "What made them who they were?", placeholder: "Their passions, quirks, sayings, habits. What will you miss most? What story would they want told?" },
+      { question: "What feeling do you want to leave?", placeholder: "Celebration of life? Quiet reflection? Hope and comfort? Any special reading or theme?" },
+    ],
+    tones: ["Warm & Personal", "Celebratory", "Quiet & Reflective", "Faith-Based"],
     theme: {
       gradient: "bg-gradient-to-b from-stone-50 via-white to-stone-50 dark:from-stone-950/20 dark:via-background dark:to-stone-950/20",
       accent: "bg-stone-600 hover:bg-stone-700",
@@ -63,6 +77,12 @@ export const toolScenarios: ToolScenario[] = [
     slug: "apology-letter",
     title: "Apology Letter Writer",
     description: "Find the right words when it matters most.",
+    steps: [
+      { question: "What happened?", placeholder: "Be honest. What did you do (or fail to do)? When and where did it happen?" },
+      { question: "How did it affect them?", placeholder: "Put yourself in their shoes. How did your action hurt, disappoint, or let them down?" },
+      { question: "What do you want to say?", placeholder: "What have you learned? What will you do differently? Why is this relationship worth repairing?" },
+    ],
+    tones: ["Sincere & Direct", "Warm & Personal", "Brief & Simple", "Heartfelt & Detailed"],
     theme: {
       gradient: "bg-gradient-to-b from-amber-50 via-white to-amber-50 dark:from-amber-950/20 dark:via-background dark:to-amber-950/20",
       accent: "bg-amber-500 hover:bg-amber-600",
@@ -82,6 +102,12 @@ export const toolScenarios: ToolScenario[] = [
     slug: "resignation-letter",
     title: "Resignation Letter Writer",
     description: "Leave with grace, gratitude, and professionalism.",
+    steps: [
+      { question: "What's your situation?", placeholder: "Current role, company, how long you've been there. Your relationship with your manager." },
+      { question: "Why are you leaving?", placeholder: "New opportunity? Career change? Personal reasons? What are you grateful for about this job?" },
+      { question: "How do you want to leave it?", placeholder: "Last day. How much notice? Any specific projects to wrap up? Want to stay in touch?" },
+    ],
+    tones: ["Warm & Grateful", "Brief & Professional", "Detailed & Helpful", "Formal & Traditional"],
     theme: {
       gradient: "bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950/20 dark:via-background dark:to-slate-950/20",
       accent: "bg-slate-700 hover:bg-slate-800",
@@ -101,6 +127,12 @@ export const toolScenarios: ToolScenario[] = [
     slug: "performance-review",
     title: "Self-Review Writer",
     description: "Transform your bullet points into a compelling performance narrative.",
+    steps: [
+      { question: "What's your role and scope?", placeholder: "Job title, team, how long in this role. What are your main responsibilities?" },
+      { question: "What did you achieve?", placeholder: "List projects, metrics, goals hit. Any numbers? Revenue impact? Team impact? Awards?" },
+      { question: "What's next?", placeholder: "Challenges you overcame? Skills you built? Goals for next period? Areas you want to grow?" },
+    ],
+    tones: ["Confident & Impactful", "Humble & Team-Focused", "Data-Driven", "Growth-Oriented"],
     theme: {
       gradient: "bg-gradient-to-b from-blue-50 via-white to-blue-50 dark:from-blue-950/20 dark:via-background dark:to-blue-950/20",
       accent: "bg-blue-600 hover:bg-blue-700",
@@ -120,6 +152,12 @@ export const toolScenarios: ToolScenario[] = [
     slug: "cover-letter",
     title: "Cover Letter Writer",
     description: "Tell your story in a way that makes recruiters stop scrolling.",
+    steps: [
+      { question: "What's the job?", placeholder: "Role title, company name, industry. What excites you about this company specifically?" },
+      { question: "What's your story?", placeholder: "Your experience, key achievements. What's your biggest professional win? What makes you different?" },
+      { question: "Why this role?", placeholder: "Why now? How does this connect to your career path? What will you bring that others won't?" },
+    ],
+    tones: ["Confident & Bold", "Warm & Authentic", "Concise & Direct", "Story-Driven"],
     theme: {
       gradient: "bg-gradient-to-b from-indigo-50 via-white to-indigo-50 dark:from-indigo-950/20 dark:via-background dark:to-indigo-950/20",
       accent: "bg-indigo-600 hover:bg-indigo-700",
@@ -139,6 +177,12 @@ export const toolScenarios: ToolScenario[] = [
     slug: "dating-profile",
     title: "Dating Profile Writer",
     description: "Show the real you — not a list of hobbies, but who you actually are.",
+    steps: [
+      { question: "Who are you, really?", placeholder: "Not your job title. What brings you joy? What would friends say about you? What's a story only they know?" },
+      { question: "What does your life look like?", placeholder: "Weekday routine? Weekend adventures? What's your perfect Sunday? Any pets? Hidden talents?" },
+      { question: "What are you looking for?", placeholder: "What kind of connection? Any dealbreakers? What's a quality you admire most in others?" },
+    ],
+    tones: ["Witty & Playful", "Warm & Genuine", "Adventurous & Bold", "Short & Intriguing"],
     theme: {
       gradient: "bg-gradient-to-b from-pink-50 via-white to-pink-50 dark:from-pink-950/20 dark:via-background dark:to-pink-950/20",
       accent: "bg-pink-500 hover:bg-pink-600",
@@ -158,6 +202,12 @@ export const toolScenarios: ToolScenario[] = [
     slug: "cold-email",
     title: "Cold Email Writer",
     description: "Write emails people actually want to reply to.",
+    steps: [
+      { question: "Who are you reaching out to?", placeholder: "Name, role, company. What do you know about them? Any mutual connections or shared interests?" },
+      { question: "What's your value proposition?", placeholder: "What problem do you solve for them? Why should they care? What's the simplest next step you're asking for?" },
+      { question: "What's your angle?", placeholder: "Any research you've done on their company? Recent news? A compliment that shows you did your homework?" },
+    ],
+    tones: ["Short & Punchy", "Research-Backed", "Casual & Friendly", "Value-First"],
     theme: {
       gradient: "bg-gradient-to-b from-teal-50 via-white to-teal-50 dark:from-teal-950/20 dark:via-background dark:to-teal-950/20",
       accent: "bg-teal-600 hover:bg-teal-700",
