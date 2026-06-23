@@ -56,8 +56,10 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
     <div className="space-y-6">
       {/* Input Card */}
       <div className={`rounded-xl border ${tool.theme.border} bg-card shadow-sm`}>
-        <div className={`flex items-center gap-3 px-6 pt-6 pb-2 ${tool.theme.text}`}>
-          <Icon className="h-5 w-5" />
+        <div className={`flex items-center gap-3 px-6 pt-6 pb-2`}>
+          <div className={`flex items-center justify-center w-10 h-10 rounded-xl ${tool.theme.accentLight} border ${tool.theme.border}`}>
+            <Icon className={`h-5 w-5 ${tool.theme.text}`} />
+          </div>
           <h2 className="font-semibold">{tool.inputLabel}</h2>
         </div>
         <div className="p-6 pt-2">
@@ -90,8 +92,10 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
       {result && (
         <div className={`rounded-xl border ${tool.theme.border} bg-card shadow-sm animate-in fade-in slide-in-from-top-4 duration-300`}>
           <div className="flex items-center justify-between px-6 pt-6 pb-2">
-            <div className={`flex items-center gap-2 ${tool.theme.text}`}>
-              <Icon className="h-4 w-4" />
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-xl ${tool.theme.accentLight} border ${tool.theme.border}`}>
+                <Icon className={`h-5 w-5 ${tool.theme.text}`} />
+              </div>
               <h2 className="font-semibold">{tool.outputLabel}</h2>
             </div>
             <Button variant="ghost" size="sm" onClick={handleCopy} className="text-muted-foreground hover:text-foreground">

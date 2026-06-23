@@ -2,6 +2,11 @@ import { notFound } from "next/navigation";
 import { toolScenarios } from "@/config/tools";
 import { ToolGenerator } from "@/components/tools/ToolGenerator";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Heart, Feather, HeartHandshake, Briefcase, ClipboardCheck, FileText, Send } from "lucide-react";
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Heart, Feather, HeartHandshake, Briefcase, ClipboardCheck, FileText, Send,
+};
 
 export function generateStaticParams() {
   return toolScenarios.map((tool) => ({ slug: tool.slug }));
@@ -16,10 +21,16 @@ async function ToolPageContent({ params }: { params: Promise<{ slug: string }> }
   const tool = toolScenarios.find((t) => t.slug === slug);
   if (!tool) notFound();
 
+  const ToolIcon = iconMap[tool.theme.icon] || FileText;
+
   return (
     <div className={tool.theme.gradient}>
       <div className="container mx-auto px-4 max-w-3xl py-12">
+        {/* Hero */}
         <div className="text-center mb-10">
+          <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl ${tool.theme.accentLight} border ${tool.theme.border} mb-6`}>
+            <ToolIcon className={`h-10 w-10 ${tool.theme.text}`} />
+          </div>
           <h1 className={`text-4xl font-bold tracking-tight ${tool.theme.text}`}>
             {tool.title}
           </h1>
@@ -30,15 +41,15 @@ async function ToolPageContent({ params }: { params: Promise<{ slug: string }> }
 
         <ToolGenerator tool={tool} />
 
-        {/* Example Output */}
+        {/* Example */}
         <div className={`mt-10 rounded-xl border ${tool.theme.border} ${tool.theme.accentLight} p-6`}>
           <h3 className={`text-sm font-semibold mb-3 ${tool.theme.text}`}>
-            Example — {tool.title}
+            Example output
           </h3>
-          <div className="grid gap-6 md:grid-cols-2 text-sm">
+          <div className="grid gap-6 lg:grid-cols-2 text-sm">
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                Sample Input
+                What you share
               </p>
               <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
                 {tool.sampleInput}
@@ -46,9 +57,9 @@ async function ToolPageContent({ params }: { params: Promise<{ slug: string }> }
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                Sample Output
+                What you get
               </p>
-              <div className={`p-4 rounded-lg border ${tool.theme.border} bg-background leading-relaxed whitespace-pre-line`}>
+              <div className={`p-4 rounded-lg border ${tool.theme.border} bg-background leading-relaxed whitespace-pre-line text-sm`}>
                 {tool.sampleOutput}
               </div>
             </div>
@@ -59,23 +70,26 @@ async function ToolPageContent({ params }: { params: Promise<{ slug: string }> }
         <div className="mt-12">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">More Writing Tools</CardTitle>
+              <CardTitle className="text-lg">More writing tools</CardTitle>
               <CardDescription>Try our other free generators</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-2 sm:grid-cols-2">
                 {toolScenarios
                   .filter((t) => t.slug !== slug)
-                  .map((t) => (
-                    <a
-                      key={t.slug}
-                      href={`/tools/${t.slug}`}
-                      className={`flex items-center gap-3 p-3 rounded-lg border ${t.theme.border} hover:bg-muted transition-colors text-sm`}
-                    >
-                      <span className="text-lg">{getIconChar(t.slug)}</span>
-                      <span>{t.title}</span>
-                    </a>
-                  ))}
+                  .map((t) => {
+                    const ItemIcon = iconMap[t.theme.icon] || FileText;
+                    return (
+                      <a
+                        key={t.slug}
+                        href={`/tools/${t.slug}`}
+                        className={`flex items-center gap-3 p-3 rounded-lg border ${t.theme.border} hover:bg-muted transition-colors text-sm`}
+                      >
+                        <ItemIcon className={`h-4 w-4 ${t.theme.text}`} />
+                        <span>{t.title}</span>
+                      </a>
+                    );
+                  })}
               </div>
             </CardContent>
           </Card>
@@ -83,18 +97,4 @@ async function ToolPageContent({ params }: { params: Promise<{ slug: string }> }
       </div>
     </div>
   );
-}
-
-function getIconChar(slug: string): string {
-  const map: Record<string, string> = {
-    "wedding-speech": "❤️",
-    "eulogy": "🙏",
-    "apology-letter": "🫰",
-    "resignation-letter": "💼",
-    "performance-review": "📊",
-    "cover-letter": "📄",
-    "dating-profile": "💕",
-    "cold-email": "✉️",
-  };
-  return map[slug] ?? "";
 }
