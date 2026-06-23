@@ -29,8 +29,7 @@ export const toolScenarios: ToolScenario[] = [
     description: "Craft a heartfelt, personal speech for the people you love most.",
     steps: [
       { question: "What's your role?", placeholder: "Best man? Maid of honor? Father of the bride? Tell us who you are in this wedding." },
-      { question: "Tell us about the couple", placeholder: "How do you know them? What's a moment you'll never forget? What makes their love story special?" },
-      { question: "What tone feels right?", placeholder: "Heartfelt and tearful? Funny and light? A mix of both? Any inside jokes or stories to include?" },
+      { question: "Tell us about the couple", placeholder: "How do you know them? What's a moment you'll never forget? What makes their love story special? Any inside jokes or funny stories to include?" },
     ],
     tones: ["Heartfelt & Warm", "Funny & Charming", "Classic & Elegant", "Short & Sweet"],
     theme: {
