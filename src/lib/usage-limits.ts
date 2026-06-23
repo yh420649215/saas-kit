@@ -38,14 +38,6 @@ export function remainingFree(): number {
   return Math.max(0, FREE_LIMIT - getUsage());
 }
 
-export function hasFreeUses(): boolean {
-  return remainingFree() > 0;
-}
-
 export function isUnlocked(): boolean {
   return safeGet(UNLOCKED_KEY) === "true";
-}
-
-export function unlock(): void {
-  safeSet(UNLOCKED_KEY, "true");
 }
