@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, Loader2 } from "lucide-react";
 
 interface PaywallModalProps {
   open: boolean;
@@ -11,6 +11,7 @@ interface PaywallModalProps {
 }
 
 export function PaywallModal({ open, onClose }: PaywallModalProps) {
+  const [loading, setLoading] = useState(false);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
@@ -66,9 +67,34 @@ export function PaywallModal({ open, onClose }: PaywallModalProps) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <a href="/pricing" className={buttonVariants({ size: "lg", className: "w-full" })}>
-            Get Full Access — $19
-          </a>
+          <Button
+            size="lg"
+            className="w-full"
+            disabled={loading}
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const res = await fetch("/api/stripe/checkout", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    priceId: process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID,
+                    mode: "payment",
+                  }),
+                });
+                const { url, error } = await res.json();
+                if (url) window.location.href = url;
+                else alert(error || "Something went wrong. Please try again.");
+              } catch {
+                alert("Network error. Please try again.");
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            {loading ? "Redirecting..." : "Get Full Access — $19"}
+          </Button>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Maybe later
           </Button>

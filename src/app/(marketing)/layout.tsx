@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { UnlockHandler } from "@/components/tools/UnlockHandler";
 
 export default function MarketingLayout({
   children,
@@ -11,6 +13,7 @@ export default function MarketingLayout({
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
+      <Suspense><UnlockHandler /></Suspense>
     </div>
   );
 }

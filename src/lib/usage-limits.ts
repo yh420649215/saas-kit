@@ -41,3 +41,7 @@ export function remainingFree(): number {
 export function isUnlocked(): boolean {
   return safeGet(UNLOCKED_KEY) === "true";
 }
+
+export function unlock(): void {
+  safeSet(UNLOCKED_KEY, "true");
+}
