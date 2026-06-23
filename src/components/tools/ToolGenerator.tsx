@@ -32,6 +32,8 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
     setError("");
     setResult("");
 
+    const controller = new AbortController();
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -42,10 +44,14 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
             { role: "user", content: input },
           ],
         }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
-        setError("Something went wrong. Please try again.");
+        const status = response.status;
+        if (status === 429) setError("Too many requests. Please wait a moment and try again.");
+        else if (status >= 500) setError("Server error. Please try again later.");
+        else setError(`Request failed (${status}). Please try again.`);
         return;
       }
 
@@ -57,21 +63,24 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
 
       const decoder = new TextDecoder();
       let text = "";
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             try {
               const data = JSON.parse(line.slice(6));
-              if (data.type === "text-delta" && data.textDelta) {
-                text += data.textDelta;
-                setResult(text);
+              if (data.type === "text-delta" && data.delta) {
+                text += data.delta;
+              } else if (data.type === "error") {
+                setError(data.errorText || "Generation failed. Please try again.");
               }
             } catch {
               // skip unparseable lines
@@ -79,7 +88,11 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
           }
         }
       }
-    } catch {
+
+      if (text) setResult(text);
+      else if (!error) setError("No output generated. Try adding more details.");
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setError("Network error. Check your connection and try again.");
     } finally {
       setLoading(false);
