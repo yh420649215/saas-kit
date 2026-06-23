@@ -41,31 +41,6 @@ async function ToolPageContent({ params }: { params: Promise<{ slug: string }> }
 
         <ToolGenerator tool={tool} />
 
-        {/* Example */}
-        <div className={`mt-10 rounded-xl border ${tool.theme.border} ${tool.theme.accentLight} p-6`}>
-          <h3 className={`text-sm font-semibold mb-3 ${tool.theme.text}`}>
-            Example output
-          </h3>
-          <div className="grid gap-6 lg:grid-cols-2 text-sm">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                What you share
-              </p>
-              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                {tool.sampleInput}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                What you get
-              </p>
-              <div className={`p-4 rounded-lg border ${tool.theme.border} bg-background leading-relaxed whitespace-pre-line text-sm`}>
-                {tool.sampleOutput}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* More Tools */}
         <div className="mt-12">
           <Card>

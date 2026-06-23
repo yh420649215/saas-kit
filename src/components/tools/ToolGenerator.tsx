@@ -37,11 +37,12 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
   const nextStep = () => { if (answers[step].trim()) setStep(step + 1); };
   const prevStep = () => setStep(Math.max(0, step - 1));
 
-  const handleGenerate = async (toneIdx: number) => {
-    if (loading) return;
-    setLoading(true);
-    setError("");
-    setResults([]);
+  const handleGenerate = async (toneIdx: number, skipLoading?: boolean) => {
+    if (!skipLoading) {
+      setLoading(true);
+      setError("");
+      setResults([]);
+    }
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -104,14 +105,18 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       setError("Network error. Check your connection.");
     } finally {
-      setLoading(false);
+      if (!skipLoading) setLoading(false);
     }
   };
 
   const handleGenerateAll = async () => {
+    setLoading(true);
+    setError("");
+    setResults([]);
     for (let i = 0; i < tool.tones.length; i++) {
-      await handleGenerate(i);
+      await handleGenerate(i, true);
     }
+    setLoading(false);
   };
 
   const handleCopy = async (text: string, idx: number) => {
