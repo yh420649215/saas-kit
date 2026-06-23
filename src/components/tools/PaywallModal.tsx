@@ -77,10 +77,6 @@ export function PaywallModal({ open, onClose }: PaywallModalProps) {
                 const res = await fetch("/api/stripe/checkout", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    priceId: process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID,
-                    mode: "payment",
-                  }),
                 });
                 const { url, error } = await res.json();
                 if (url) window.location.href = url;
