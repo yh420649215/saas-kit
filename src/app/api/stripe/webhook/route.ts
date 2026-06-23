@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe/client";
-import { createServiceSupabase } from "@/lib/supabase/server";
+import { handleSubscriptionChange } from "@/lib/subscription";
 import Stripe from "stripe";
 
 export async function POST(request: Request) {
@@ -15,55 +15,46 @@ export async function POST(request: Request) {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: `Webhook signature verification failed: ${error.message}` },
+      {
+        error: `Webhook signature verification failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      },
       { status: 400 }
     );
   }
 
-  const supabase = await createServiceSupabase();
-
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
-      const userId = session.metadata?.userId;
+      if (!session.metadata?.userId || !session.customer || !session.subscription) break;
 
-      if (userId) {
-        // Update user's subscription status in your database
-        await supabase.from("subscriptions").upsert({
-          user_id: userId,
-          stripe_customer_id: session.customer as string,
-          stripe_subscription_id: session.subscription as string,
-          plan: session.metadata?.plan ?? "pro",
-          status: "active",
-          updated_at: new Date().toISOString(),
-        });
-      }
+      await handleSubscriptionChange({
+        stripeSubscriptionId: String(session.subscription),
+        stripeCustomerId: String(session.customer),
+        userId: session.metadata.userId,
+        plan: session.metadata?.plan ?? "pro",
+        status: "active",
+      });
       break;
     }
 
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription;
-      // Handle subscription updates
+      await handleSubscriptionChange({
+        stripeSubscriptionId: subscription.id,
+        plan: subscription.items?.data?.[0]?.price?.lookup_key ?? undefined,
+        status: subscription.status,
+      });
       break;
     }
 
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
-      // Handle subscription cancellation
-      const { data: existing } = await supabase
-        .from("subscriptions")
-        .select("id")
-        .eq("stripe_subscription_id", subscription.id)
-        .single();
-
-      if (existing) {
-        await supabase
-          .from("subscriptions")
-          .update({ status: "canceled", updated_at: new Date().toISOString() })
-          .eq("stripe_subscription_id", subscription.id);
-      }
+      await handleSubscriptionChange({
+        stripeSubscriptionId: subscription.id,
+        status: "canceled",
+      });
       break;
     }
   }

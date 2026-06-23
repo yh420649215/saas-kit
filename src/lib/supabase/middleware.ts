@@ -30,15 +30,16 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Protected routes - redirect to login
-  const protectedPaths = ["/dashboard", "/settings"];
+  const protectedPaths = ["/dashboard", "/settings", "/api/stripe"];
   const isProtected = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
+    request.nextUrl.pathname === path ||
+    request.nextUrl.pathname.startsWith(path + "/")
   );
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
-    url.searchParams.set("redirect", request.nextUrl.pathname);
+    url.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 

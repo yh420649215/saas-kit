@@ -40,7 +40,7 @@ export function PricingCards() {
               ))}
             </ul>
             <Link
-              href="/auth/register"
+              href={plan.id === "enterprise" ? "/contact" : `/auth/register?plan=${plan.id}`}
               className={buttonVariants({
                 variant: plan.highlighted ? "default" : "outline",
                 className: "w-full mt-6",

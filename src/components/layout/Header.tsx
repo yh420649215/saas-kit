@@ -14,6 +14,11 @@ import { SiteLogo } from "@/components/brand/SiteLogo";
 import { cn } from "@/lib/utils";
 import { mainNavLinks } from "@/config/navigation";
 
+function isActiveLink(pathname: string, href: string) {
+  if (!href.includes("#")) return pathname === href;
+  return pathname === href.split("#")[0];
+}
+
 export function Header() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -32,7 +37,7 @@ export function Header() {
               href={link.href}
               className={cn(
                 "text-sm font-medium transition-colors hover:text-primary",
-                pathname === link.href
+                isActiveLink(pathname, link.href)
                   ? "text-foreground"
                   : "text-muted-foreground"
               )}

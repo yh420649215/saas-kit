@@ -1,10 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { requireAuth } from "@/lib/supabase/require-auth";
-import { Button } from "@/components/ui/button";
 
 export default async function SettingsPage() {
   const { user } = await requireAuth();
@@ -54,25 +51,7 @@ export default async function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Email Notifications</p>
-                <p className="text-sm text-muted-foreground">
-                  Receive email updates about your account.
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Marketing Emails</p>
-                <p className="text-sm text-muted-foreground">
-                  Receive emails about new features and offers.
-                </p>
-              </div>
-              <Switch />
-            </div>
+            <p className="text-sm text-muted-foreground">Notification preferences coming soon.</p>
           </CardContent>
         </Card>
 
@@ -85,7 +64,7 @@ export default async function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="destructive">Delete Account</Button>
+            <p className="text-sm text-muted-foreground">Account deletion coming soon. Contact support in the meantime.</p>
           </CardContent>
         </Card>
       </div>

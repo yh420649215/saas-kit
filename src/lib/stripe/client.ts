@@ -1,11 +1,17 @@
 import Stripe from "stripe";
 
 export function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    typescript: true,
-  });
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+  }
+  return new Stripe(key);
 }
 
 export function getStripePublishableKey() {
-  return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!;
+  const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  if (!key) {
+    throw new Error("Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY environment variable");
+  }
+  return key;
 }
