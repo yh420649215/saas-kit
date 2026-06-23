@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { remainingFree, incrementUsage, isUnlocked } from "@/lib/usage-limits";
 import { PaywallModal } from "@/components/tools/PaywallModal";
 
+const FETCH_TIMEOUT_MS = 60000; // 60s per tone
+
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Heart, Feather, HeartHandshake, Briefcase, ClipboardCheck, FileText, Send,
 };
@@ -18,15 +20,20 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 export function ToolGenerator({ tool }: { tool: ToolScenario }) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>(tool.steps.map(() => ""));
-  const [selectedTone, setSelectedTone] = useState(0);
   const [results, setResults] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [showExample, setShowExample] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [freeLeft, setFreeLeft] = useState(2);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const Icon = iconMap[tool.theme.icon] || FileText;
   const currentStep = tool.steps[step];
@@ -41,16 +48,11 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
   const nextStep = () => { if (answers[step].trim()) setStep(step + 1); };
   const prevStep = () => setStep(Math.max(0, step - 1));
 
-  const handleGenerate = async (toneIdx: number, skipLoading?: boolean) => {
-    if (!skipLoading) {
-      setLoading(true);
-      setError("");
-      setResults([]);
-    }
-
+  const handleGenerate = useCallback(async (toneIdx: number): Promise<boolean> => {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     const context = tool.steps.map((s, i) => `${s.question}\n${answers[i] || "N/A"}`).join("\n\n");
     const tone = tool.tones[toneIdx];
 
@@ -69,14 +71,13 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
 
       if (!response.ok) {
         const status = response.status;
-        if (status === 429) setError("Too many requests. Please wait a moment.");
-        else if (status >= 500) setError("Server error. Please try again later.");
-        else setError(`Request failed (${status}).`);
-        return;
+        if (status === 429) { setError("Rate limited. Please wait a moment and try again."); return false; }
+        if (status >= 500) { setError("Server error. Please try again later."); return false; }
+        setError(`Request failed (${status}).`); return false;
       }
 
       const reader = response.body?.getReader();
-      if (!reader) { setError("No response from server."); return; }
+      if (!reader) { setError("No response from server."); return false; }
 
       const decoder = new TextDecoder();
       let text = "", buffer = "";
@@ -90,10 +91,10 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             try {
-              const data = JSON.parse(line.slice(6));
+              const data = JSON.parse(line.slice(6).trim());
               if (data.type === "text-delta" && data.delta) text += data.delta;
-              else if (data.type === "error") setError(data.errorText || "Generation failed.");
-            } catch {}
+              else if (data.type === "error") { setError(data.errorText || "Generation failed."); return false; }
+            } catch { /* skip unparseable lines */ }
           }
         }
       }
@@ -104,50 +105,85 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
           next[toneIdx] = text;
           return next;
         });
+        return true;
       }
+      return false;
     } catch (err: unknown) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      setError("Network error. Check your connection.");
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Request timed out or was cancelled. Please try again.");
+      } else {
+        setError("Network error. Check your connection.");
+      }
+      return false;
     } finally {
-      if (!skipLoading) setLoading(false);
+      clearTimeout(timeout);
     }
-  };
+  }, [tool, answers]);
 
-  const handleGenerateAll = async () => {
-    if (!isUnlocked() && remainingFree() <= 0) {
-      setShowPaywall(true);
-      return;
+  const handleGenerateAll = useCallback(async () => {
+    // Check paywall (safely)
+    let canGenerate = true;
+    try {
+      if (!isUnlocked() && remainingFree() <= 0) {
+        setShowPaywall(true);
+        return;
+      }
+    } catch {
+      // localStorage error — allow generation
     }
 
     setLoading(true);
     setError("");
     setResults([]);
+
+    let anySuccess = false;
+
     for (let i = 0; i < tool.tones.length; i++) {
-      await handleGenerate(i, true);
+      setError(""); // clear error between tones
+      const ok = await handleGenerate(i);
+      if (ok) anySuccess = true;
+      else {
+        // Short-circuit on rate limit or auth errors
+        break;
+      }
     }
+
     setLoading(false);
-    incrementUsage();
-    setFreeLeft(remainingFree());
-  };
+
+    // Only count usage if at least one tone succeeded
+    if (anySuccess) {
+      try { incrementUsage(); } catch { /* ignore */ }
+    } else if (!error) {
+      setError("No output generated. Try adding more details.");
+    }
+  }, [tool, handleGenerate]);
 
   const handleCopy = async (text: string, idx: number) => {
-    await navigator.clipboard.writeText(text).catch(() => {});
-    setCopied(idx);
-    setTimeout(() => setCopied(null), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(idx);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      // Clipboard failed — silently ignore, no misleading "Copied" feedback
+    }
   };
 
   return (
     <div className="space-y-6">
       {/* Free uses indicator */}
-      {!isUnlocked() && (
-        <div className="text-center">
-          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-            <span className="font-medium text-foreground">{remainingFree()}</span> free {remainingFree() === 1 ? "use" : "uses"} left
-            <span className="text-muted-foreground">·</span>
-            <button onClick={() => setShowPaywall(true)} className="text-primary hover:underline">Unlock $19</button>
-          </span>
-        </div>
-      )}
+      {(() => {
+        try { if (isUnlocked()) return null; } catch { return null; }
+        const left = (() => { try { return remainingFree(); } catch { return 2; } })();
+        return (
+          <div className="text-center">
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+              <span className="font-medium text-foreground">{left}</span> free {left === 1 ? "use" : "uses"} left
+              <span className="text-muted-foreground">·</span>
+              <button onClick={() => setShowPaywall(true)} className="text-primary hover:underline">Unlock $19</button>
+            </span>
+          </div>
+        );
+      })()}
 
       {/* Step Indicator */}
       <div className="flex items-center justify-center gap-2 mb-2">
@@ -232,7 +268,7 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
             </div>
           </div>
           <div className="p-6 pt-2">
-            <Tabs defaultValue={String(0)}>
+            <Tabs defaultValue="0">
               <TabsList className="w-full justify-start overflow-x-auto">
                 {tool.tones.map((tone, i) => (
                   <TabsTrigger key={i} value={String(i)} disabled={!results[i]}>
@@ -241,7 +277,7 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
                   </TabsTrigger>
                 ))}
               </TabsList>
-              {tool.tones.map((tone, i) => (
+              {tool.tones.map((_, i) => (
                 <TabsContent key={i} value={String(i)} className="mt-4">
                   {results[i] ? (
                     <>
@@ -252,10 +288,7 @@ export function ToolGenerator({ tool }: { tool: ToolScenario }) {
                       </Button>
                     </>
                   ) : (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin" />
-                      Generating {tone.toLowerCase()} version...
-                    </div>
+                    <div className="text-center py-8 text-muted-foreground text-sm">Failed to generate.</div>
                   )}
                 </TabsContent>
               ))}
